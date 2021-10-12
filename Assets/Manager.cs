@@ -8,16 +8,16 @@ public class Manager : MonoBehaviour
     [SerializeField] private Text _output;
     [SerializeField] private Text _output2;
 
-    private string _sign; //Хранит в себе математический знак
+    private string _sign; 
 
-    private string _numberStr; //Хранит в себе число в формате строки. Реализует возможность работы калькулятора с многозначными и отрицательными числами
+    private string _numberStr; 
 
-    private double _newNumber; //Поле куда записываеться новые числа с ввода. Используеться для подсчетов.
-    private double _res; //Хранит в себе резултат математических вычислений.
+    private double _newNumber; 
+    private double _res; 
 
-    private string _secondSign; //Тоже хранит в себе знак. Используеться в ситуации где разные приоритеты выполнения подсчета.
-                                //Пример 2 + 2 * 2, в данной ситауции эта переменная будет хранить знак "*".
-    private double _numberX; //Дополнительная переменная которая используеться в ситуации где разные приоритеты подсчета.
+    private string _secondSign; 
+                                
+    private double _numberX; 
 
     private void Start()
     {
@@ -34,19 +34,19 @@ public class Manager : MonoBehaviour
             return;
         }
 
-        _output2.text += input; //!
+        //_output2.text += input; 
 
         if (float.TryParse(input, out float num)) 
         {
-            EnteringNum(input); //При вводе числа записываю его в строку, для возможности получения многозначного числа.
+            EnteringNum(input); 
         }
         else
         {
-            if (input == ",") //Логика кнопки ",".
+            if (input == ",") 
             {
-                EnteringСomma();
+                EnteringComma();
             }
-            else if (input == "-" && _numberStr == null) //Реализация отрицательных чисел).
+            else if (input == "-" && _numberStr == null) 
             {
                 _numberStr = "-";
             }
@@ -81,6 +81,11 @@ public class Manager : MonoBehaviour
                 if (input != "sqrt")
                     _sign = input;
 
+                if (_sign != null)
+                    _output2.text = $"{_res} {_sign} {_newNumber}";
+                else if (_secondSign != null)
+                    _output2.text = $"{_res} {_sign} {_newNumber} {_secondSign} {_numberX}";
+
                 return;
             }
         }
@@ -91,9 +96,21 @@ public class Manager : MonoBehaviour
         }
 
         _output.text = Convert.ToString(Calculate(_sign, _res, _newNumber));
+
+        if (_secondSign != null)
+            _output2.text = $"{_res} {_sign} {_newNumber}";
+        else if (_sign != null)
+            _output2.text = $"{_res} {_sign} {_newNumber} {_secondSign} {_numberX}";
+        else
+            _output2.text = _newNumber.ToString();
     }   
 
-    private bool CheckingPriorities (string input) //Проверяет приоритет расчетов
+    private void Output2()
+    {
+
+    }
+
+    private bool CheckingPriorities (string input) 
     {
         bool fine = true;
         if ((_sign == "+" || _sign == "-") && (input == "*" || input == "/"))
@@ -102,7 +119,7 @@ public class Manager : MonoBehaviour
         return fine;
     }
 
-    private void EnteringNum(string input) //Записывает число в виде строки в переменные
+    private void EnteringNum(string input) 
     {
         if (float.TryParse(input, out float num))
         {
@@ -122,15 +139,15 @@ public class Manager : MonoBehaviour
         }
     }
 
-    private void EnteringСomma() //Реализация запятой
+    private void EnteringComma() 
     {
-        if (_numberStr != null && _numberStr.Length < 2)
+        if (_numberStr != null)
             _numberStr += ',';
         else if (_numberStr == null)
             _numberStr = "0,";
     }
 
-    private void PriorityCounting(string input) //Выполняет приоритетный подсчет.
+    private void PriorityCounting(string input) 
     {
         _numberStr = null;
 
@@ -150,7 +167,7 @@ public class Manager : MonoBehaviour
         }
     }
 
-    private double Calculate(string sign, double num1 = 0, double num2 = 0) //Выполняет расчет.
+    private double Calculate(string sign, double num1 = 0, double num2 = 0) 
     {
         double res = 0;
 
@@ -176,7 +193,7 @@ public class Manager : MonoBehaviour
         return res;
     }
 
-    private void Clear() // Сбрасывает все поля.
+    private void Clear() 
     {
         _sign = null;
         _secondSign = null;
