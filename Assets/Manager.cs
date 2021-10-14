@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,6 +14,8 @@ public class Manager : MonoBehaviour
     private string[] _signs = new string[2];
 
     private int _numsI;
+
+    private Stack<Save> _saves;
 
     private void Start()
     {
@@ -34,32 +36,46 @@ public class Manager : MonoBehaviour
         {
             EnteringNum(input);
         }
+        else if (input == "Back")
+        {
+            LoadSave();
+        }
+        else if (input == "=")
+        {
+            string str = PrintOutput().ToString();
+            Clear();
+            _numsStr[0] = _currentNumber = str;
+        }
         else
         {
-            if (_numsStr[0] == null)
+            if (_numsStr[0] != null)
             {
-                return;
-            }
-            else
-            {
-                _currentNumber = null;
-
                 if (_numsI < 2)
                     _numsI++;
 
-                if (_signs[0] != null && _signs[1] != null)
+                if (CheckingPriorities() == false && (input == "+" || input == "-") && _numsStr[2] == null)
+                    LoadSave();
+                
+                _currentNumber = null;
+
+                if (_signs[0] != null && _signs[1] != null && _numsStr[2] != null)
                 {
                     if (CheckingPriorities() == false)
                     {
                         _numsStr[1] = Calculate(_signs[1], _numsStr[1], _numsStr[2]).ToString();
                         _numsStr[2] = null;
+
+                        _signs[1] = null;
                     }
                     else
                     {
                         _numsStr[0] = Calculate(_signs[0], _numsStr[0], _numsStr[1]).ToString();
                         _numsStr[1] = _numsStr[2];
                         _numsStr[2] = null;
-                    }
+
+                        _signs[0] = _signs[1];
+                        _signs[1] = null;
+                    }                    
                 }
 
                 if (_signs[0] == null)
@@ -73,23 +89,31 @@ public class Manager : MonoBehaviour
 
         PrintOutput();
         PrintOutputTwo();
+
+        if (input != "Back")
+            Save();
     } 
 
-    private void PrintOutput()
+    private double PrintOutput()
     {
+        double num = 0;
         if (CheckingPriorities() == false)
         {
             if (_numsStr[2] == null)
-                return;
+                return 0;
 
-            double num = Calculate(_signs[1], _numsStr[1], _numsStr[2]);
-            _output.text = Calculate(_signs[0], _numsStr[0], num.ToString()).ToString();
+            num = Calculate(_signs[1], _numsStr[1], _numsStr[2]);
+            num = Calculate(_signs[0], _numsStr[0], num.ToString());
         }
         else
         {
-            double num = Calculate(_signs[0], _numsStr[0], _numsStr[1]);
-            _output.text = Calculate(_signs[1], num.ToString(), _numsStr[2]).ToString();
+            num = Calculate(_signs[0], _numsStr[0], _numsStr[1]);
+            num = Calculate(_signs[1], num.ToString(), _numsStr[2]);
         }
+
+        _output.text = num.ToString();
+
+        return num;
     }
 
     private void PrintOutputTwo()
@@ -181,6 +205,33 @@ public class Manager : MonoBehaviour
         return str;
     }
 
+    private void LoadSave()
+    {
+        if (_saves != null || _saves.Count > 0)
+        {
+            _saves.Pop();
+            Save save = _saves.Peek();
+
+            _currentNumber = save.CurrentNumber;
+            _numsI = save.NumsI;
+
+            for (int i = 0; i < _numsStr.Length; i++)
+            {
+                _numsStr[i] = save.NumsStr[i];
+            }
+
+            for (int i = 0; i < _signs.Length; i++)
+            {
+                _signs[i] = save.Signs[i];
+            }
+        }
+    }
+
+    private void Save()
+    {
+        _saves.Push(new Save(_currentNumber, _numsStr, _signs, _numsI));
+    }
+
     private void Clear() 
     {
         _output.text = "0";
@@ -191,5 +242,39 @@ public class Manager : MonoBehaviour
         _numsI = 0;
         _numsStr = new string[3];
         _signs = new string[2];
+
+        _saves = new Stack<Save>();
+        Save();
+    }
+}
+
+public class Save
+{
+    public string CurrentNumber => _currentNumber;
+    public string[] NumsStr => _numsStr;
+    public string[] Signs => _signs;
+    public int NumsI => _numsI;
+
+    private string _currentNumber;
+
+    private string[] _numsStr = new string[3];
+    private string[] _signs = new string[2];
+
+    private int _numsI;
+
+    public Save(string currentNumber, string[] numsStr, string[] signs, int numsI)
+    {
+        _currentNumber = currentNumber;
+        _numsI = numsI;
+
+        for (int i = 0; i < numsStr.Length; i++)
+        {
+            _numsStr[i] = numsStr[i];
+        }
+
+        for (int i = 0; i < signs.Length; i++)
+        {
+            _signs[i] = signs[i];
+        }
     }
 }
