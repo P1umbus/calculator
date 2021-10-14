@@ -6,24 +6,20 @@ using UnityEngine.UI;
 public class Manager : MonoBehaviour
 {
     [SerializeField] private Text _output;
-    [SerializeField] private Text _output2;
+    [SerializeField] private Text _outputTwo;
 
-    private string _sign; 
+    private string _currentNumber; 
 
-    private string _numberStr; 
+    private string[] _numsStr = new string[3];
+    private string[] _signs = new string[2];
 
-    private double _newNumber; 
-    private double _res; 
-
-    private string _secondSign; 
-                                
-    private double _numberX; 
+    private int _numsI;
 
     private void Start()
     {
         Clear();
     }
-
+        
     public void OnButtonClick()
     {
         string input = EventSystem.current.currentSelectedGameObject.name;
@@ -34,142 +30,124 @@ public class Manager : MonoBehaviour
             return;
         }
 
-        //_output2.text += input; 
-
-        if (float.TryParse(input, out float num)) 
+        if (float.TryParse(input, out float num) || input == ",")
         {
-            EnteringNum(input); 
+            EnteringNum(input);
         }
         else
         {
-            if (input == ",") 
+            if (_numsStr[0] == null)
             {
-                EnteringComma();
-            }
-            else if (input == "-" && _numberStr == null) 
-            {
-                _numberStr = "-";
+                return;
             }
             else
             {
-                if (_numberStr == "-")
-                    _numberStr = "-0";
+                _currentNumber = null;
 
-                if (_secondSign != null && _numberStr == null) 
+                if (_numsI < 2)
+                    _numsI++;
+
+                if (_signs[0] != null && _signs[1] != null)
                 {
-                    _secondSign = null;
-                }
-                else if (_secondSign != null)
-                {
-                    PriorityCounting(input);
-                    return;
-                }
-
-                if (_numberStr != null)
-                    _newNumber = double.Parse(_numberStr);
-
-                _numberStr = null;
-
-                if (CheckingPriorities(input) == false)
-                {
-                    _secondSign = input;
-                    return;
+                    if (CheckingPriorities() == false)
+                    {
+                        _numsStr[1] = Calculate(_signs[1], _numsStr[1], _numsStr[2]).ToString();
+                        _numsStr[2] = null;
+                    }
+                    else
+                    {
+                        _numsStr[0] = Calculate(_signs[0], _numsStr[0], _numsStr[1]).ToString();
+                        _numsStr[1] = _numsStr[2];
+                        _numsStr[2] = null;
+                    }
                 }
 
-                _res = Calculate(_sign, _res, _newNumber);
-
-                if (input != "sqrt")
-                    _sign = input;
-
-                if (_sign != null)
-                    _output2.text = $"{_res} {_sign} {_newNumber}";
-                else if (_secondSign != null)
-                    _output2.text = $"{_res} {_sign} {_newNumber} {_secondSign} {_numberX}";
-
-                return;
+                if (_signs[0] == null)
+                    _signs[0] = input;
+                else if (_numsStr[1] == null)
+                    _signs[0] = input;
+                else
+                    _signs[1] = input;
             }
         }
 
-        if (_secondSign != null)
-        {
-            _newNumber = Calculate(_secondSign, _newNumber, _numberX);
-        }
+        PrintOutput();
+        PrintOutputTwo();
+    } 
 
-        _output.text = Convert.ToString(Calculate(_sign, _res, _newNumber));
-
-        if (_secondSign != null)
-            _output2.text = $"{_res} {_sign} {_newNumber}";
-        else if (_sign != null)
-            _output2.text = $"{_res} {_sign} {_newNumber} {_secondSign} {_numberX}";
-        else
-            _output2.text = _newNumber.ToString();
-    }   
-
-    private void Output2()
+    private void PrintOutput()
     {
+        if (CheckingPriorities() == false)
+        {
+            if (_numsStr[2] == null)
+                return;
 
+            double num = Calculate(_signs[1], _numsStr[1], _numsStr[2]);
+            _output.text = Calculate(_signs[0], _numsStr[0], num.ToString()).ToString();
+        }
+        else
+        {
+            double num = Calculate(_signs[0], _numsStr[0], _numsStr[1]);
+            _output.text = Calculate(_signs[1], num.ToString(), _numsStr[2]).ToString();
+        }
     }
 
-    private bool CheckingPriorities (string input) 
+    private void PrintOutputTwo()
+    {
+        _outputTwo.text = $"{_numsStr[0] ?? ""}{_signs[0] ?? ""}{_numsStr[1] ?? ""}{_signs[1] ?? ""}{_numsStr[2] ?? ""}";
+    }
+
+    private bool CheckingPriorities()
     {
         bool fine = true;
-        if ((_sign == "+" || _sign == "-") && (input == "*" || input == "/"))
+        if ((_signs[0] == "+" || _signs[0] == "-") && (_signs[1] == "*" || _signs[1] == "/"))
             fine = false;
 
         return fine;
     }
 
-    private void EnteringNum(string input) 
+    private void EnteringNum(string input)
     {
-        if (float.TryParse(input, out float num))
+        if (input == ",")
         {
-            if (_numberStr != null)
-                _numberStr += input;
-            else
-                _numberStr = input;
+            EnteringComma();
+        }
+        else if (_currentNumber != null)
+        {
+            if (_currentNumber == "0" && input == "0")
+                return;
+            else if (_currentNumber.Length > 10)
+                return;
 
-            if (_secondSign == null)
-                _newNumber = double.Parse(_numberStr);
-            else
-                _numberX = double.Parse(_numberStr);
+            _currentNumber += input;
         }
         else
         {
-            Debug.LogError("Этот метод может принимать только числа в виде строк!");
+            _currentNumber = input;
         }
+
+        _numsStr[_numsI] = _currentNumber;
     }
 
     private void EnteringComma() 
     {
-        if (_numberStr != null)
-            _numberStr += ',';
-        else if (_numberStr == null)
-            _numberStr = "0,";
-    }
-
-    private void PriorityCounting(string input) 
-    {
-        _numberStr = null;
-
-        _numberX = 0;
-
-        if (CheckingPriorities(input) == false)
-        {
-            _secondSign = input;
-        }
+        if (_currentNumber == null)
+            _currentNumber = "0,";
+        else if (_currentNumber.Contains(","))
+            Debug.Log("Тут уже есть запятая");
         else
-        {
-            _secondSign = null;
-
-            _res = Calculate(_sign, _res, _newNumber);
-
-            _sign = input;
-        }
+            _currentNumber += ',';        
     }
 
-    private double Calculate(string sign, double num1 = 0, double num2 = 0) 
+    private double Calculate(string sign, string numStr1, string numStr2) 
     {
         double res = 0;
+
+        numStr1 = Check(numStr1);
+        numStr2 = Check(numStr2);
+
+        double num1 = double.Parse(numStr1 ?? "0");
+        double num2 = double.Parse(numStr2 ?? "0");        
 
         if (sign == null)
             sign = "+";
@@ -193,19 +171,25 @@ public class Manager : MonoBehaviour
         return res;
     }
 
+    private string Check(string str)
+    {
+        if (str != null)
+        {
+            if (str.EndsWith(","))
+                str = str.Remove(str.Length - 1);
+        }
+        return str;
+    }
+
     private void Clear() 
     {
-        _sign = null;
-        _secondSign = null;
-
         _output.text = "0";
-        _output2.text = "";
+        _outputTwo.text = "";
 
-        _newNumber = 0;
-        _res = 0;
+        _currentNumber = null;
 
-        _numberX = 0;
-
-        _numberStr = null;
+        _numsI = 0;
+        _numsStr = new string[3];
+        _signs = new string[2];
     }
 }
